@@ -2,7 +2,6 @@ import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { PrismaClient } from '@prisma/client';
 import axios from 'axios';
-import utils from './utils';
 
 @Injectable()
 export class AppService {
@@ -127,14 +126,14 @@ export class AppService {
         externalId: genre.id,
       },
     });
-    if (!genreExists){
-    await this.prisma.genre.create({
-      data: {
-        externalId: genre.id,
-        nameEn: genre.name,
-      },
-    });}
-    else {
+    if (!genreExists) {
+      await this.prisma.genre.create({
+        data: {
+          externalId: genre.id,
+          nameEn: genre.name,
+        },
+      });
+    } else {
       await this.prisma.genre.update({
         where: {
           externalId: genre.id,

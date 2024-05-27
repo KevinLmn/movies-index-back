@@ -20,7 +20,12 @@ export class SearchService {
   async insertMovie(movie: any) {
     const index = this.getMovieIndex();
     try {
-      await index.addDocuments([movie], { primaryKey: 'externalId' });
+      const timestampInMilliseconds = Date.parse(movie.releaseDate);
+      const timestamp = timestampInMilliseconds / 1000;
+      movie.releaseDate = timestamp;
+      await index.addDocuments([movie], {
+        primaryKey: 'externalId',
+      });
     } catch (error) {
       console.error(error);
     }
@@ -39,8 +44,37 @@ export class SearchService {
 
   async searchMovies(search: any) {
     const index = this.getMovieIndex();
+    const genresParsed = Object.entries(search.filters).map(([key, value]) => {
+      return value ? `genresEN = "${key}"` : null;
+    });
+    const fromDate = new Date(search.date.from);
+    const toDate = new Date(search.date.to);
+    const fromTimestamp = Math.floor(fromDate.getTime() / 1000);
+    const toTimestamp = Math.floor(toDate.getTime() / 1000);
+    const genreCondition = `(${genresParsed
+      .filter((filter) => filter !== null)
+      .join(' OR ')})`;
+
+    const dateCondition =
+      search.date.from &&
+      search.date.to &&
+      `(releaseDate ${fromTimestamp} TO ${toTimestamp})`;
+
+    const finalFilter = [genreCondition, dateCondition]
+      .filter(
+        (filter) => filter !== null && filter !== undefined && filter !== '()',
+      )
+      .join(' AND ');
+
+    // const finalFilter = ['genres IN [Horror, Comedy, Adventure]', dateCondition]
+    //   .filter(
+    //     (filter) => filter !== null && filter !== undefined && filter !== '()',
+    //   )
+    //   .join(' OR ');
+
     try {
       const response = await index.search(search.text || '', {
+        filter: finalFilter,
         limit: 24,
         offset: 0,
         attributesToSearchOn: ['titleEn', 'titleFr'],
@@ -99,6 +133,35 @@ export class SearchService {
         if (hits.length > 5) break;
       }
       return hits;
+    } catch (error) {
+      console.error(error);
+    }
+  }
+
+  async updateMovieGenre(movie, genres) {
+    const index = this.getMovieIndex();
+    try {
+      const timestampInMilliseconds = Date.parse(movie.releaseDate);
+      const timestamp = timestampInMilliseconds / 1000;
+      movie.releaseDate = timestamp;
+      movie.genreEN = genres.map((genre) => genre.genre.nameEn);
+      const response = await index.updateDocuments([movie]);
+      return response;
+    } catch (error) {
+      console.error(error);
+    }
+  }
+
+  async setFilterableAttributes() {
+    const index = this.getMovieIndex();
+    try {
+      const response = await index.updateFilterableAttributes([
+        'genresEN',
+        'releaseDate',
+        'popularity',
+        'voteAverage',
+      ]);
+      return response;
     } catch (error) {
       console.error(error);
     }

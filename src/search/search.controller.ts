@@ -1,10 +1,13 @@
 import { Body, Controller, Get, Param, Post } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
+import { PrismaClient } from '@prisma/client';
 import { AppService } from 'src/app.service';
 import { SearchService } from './search.service';
 
 @Controller('/search')
 export class SearchController {
+  private prisma = new PrismaClient();
+
   constructor(
     private readonly meilisearchService: SearchService,
     private readonly appService: AppService,
@@ -53,5 +56,37 @@ export class SearchController {
     const recommandations =
       await this.meilisearchService.searchRecommandations(recommandationsIds);
     return { movie, recommandations };
+  }
+
+  @Get('/updateMovieGenres')
+  async searchUniqueMovieFilter(@Param('id') id: string): Promise<any> {
+    try {
+      const movies = await this.appService.getAllMovies();
+      for (const movie of movies) {
+        const genres = await this.prisma.movieGenre.findMany({
+          where: {
+            movieId: movie.externalId,
+          },
+          select: {
+            genre: {
+              select: {
+                nameEn: true,
+              },
+            },
+          },
+        });
+        await this.meilisearchService.updateMovieGenre(movie, genres);
+        if (movie.id % 100 === 0) {
+          console.log(`Updated ${movie.id} movies`);
+        }
+      }
+    } catch (error) {
+      console.error(error);
+    }
+  }
+
+  @Get('/setFilterableAttributes')
+  async setFilterableAttributes(): Promise<any> {
+    return await this.meilisearchService.setFilterableAttributes();
   }
 }
