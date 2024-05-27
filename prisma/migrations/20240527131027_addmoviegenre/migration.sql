@@ -1,0 +1,6 @@
+-- CreateTable
+CREATE TABLE "MovieGenre" (
+    "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    "movieId" INTEGER NOT NULL,
+    "genreId" INTEGER NOT NULL
+);
