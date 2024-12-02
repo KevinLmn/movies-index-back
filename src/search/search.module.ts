@@ -6,10 +6,12 @@ import { SearchController } from './search.controller';
 import { SearchService } from './search.service';
 
 @Module({
-  imports: [ConfigModule.forRoot({
-    isGlobal: true,
-    load: [utils],
-  })],
+  imports: [
+    ConfigModule.forRoot({
+      isGlobal: true,
+      load: [utils],
+    }),
+  ],
   controllers: [SearchController],
   providers: [SearchService, AppService],
 })

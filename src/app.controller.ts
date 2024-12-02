@@ -5,62 +5,64 @@ import { AppService } from './app.service';
 
 @Controller()
 export class AppController {
-  constructor(private readonly appService: AppService, private readonly ConfigService: ConfigService) {}
+  constructor(
+    private readonly appService: AppService,
+    private readonly ConfigService: ConfigService,
+  ) {}
 
   private readonly apiUrl = 'https://api.themoviedb.org/3';
 
   @Get('/scrapMovies')
   async scrapDatabase(): Promise<any> {
-    const totalResults = 10000;
+    const totalResults = 20000;
     const movies = [];
-    const resultsPerPage = 20;
-    const totalPages = Math.ceil(totalResults / resultsPerPage);
 
-    try {
-      for (let page = 1; page <= totalPages; page++) {
-        const response = await axios.get(
-          `${this.apiUrl}/movie/popular?language=fr-FR`,
-          {
-            params: {
-              api_key: this.ConfigService.get<string>('TMDB_API_KEY'),
-              page: page,
+    const fetchMovies = async () => {
+      try {
+        for (let page = 1; page <= 500; page++) {
+          const response = await axios.get(
+            `${this.apiUrl}/movie/popular?language=fr-FR`,
+            {
+              params: {
+                api_key: this.ConfigService.get<string>('TMDB_API_KEY'),
+                page: page,
+                sort_by: 'popularity.desc',
+              },
             },
-          },
-        );
-        const results = response.data.results;
-
-        for (const movie of results) {
-          await this.appService.insertMovie(
-            'fr-FR',
-            movie.adult,
-            movie.title,
-            movie.id,
-            'director',
-            movie.original_language,
-            movie.overview,
-            movie.popularity,
-            movie.release_date,
-            movie.poster_path,
-            movie.vote_average,
-            movie.genre_ids,
           );
+          const results = response.data.results;
 
-          // for (const genre of movie.genre) {
-          //   await this.appService.insertGenres(movie.movieGenre);
-          // }
+          for (const movie of results) {
+            await this.appService.insertMovie(
+              'fr-FR',
+              movie.adult,
+              movie.title,
+              movie.id,
+              'director',
+              movie.original_language,
+              movie.overview,
+              movie.popularity,
+              movie.release_date,
+              movie.poster_path,
+              movie.vote_average,
+              movie.genre_ids,
+            );
+          }
+          movies.push(...response.data.results);
+          console.log(`Inserted ${movies.length} movies`);
         }
-        movies.push(...response.data.results);
+      } catch (error) {
+        console.error(error);
       }
-    } catch (error) {
-      console.error(error);
-    }
 
-    return { count: movies.length, movies: movies.slice(0, totalResults) };
+      return { count: movies.length, movies: movies.slice(0, totalResults) };
+    };
+
+    await fetchMovies();
   }
 
   @Get('/movies')
   async getMovies(): Promise<any> {
-
     return await this.appService.getMovies();
   }
 

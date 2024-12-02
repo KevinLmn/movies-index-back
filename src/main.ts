@@ -4,7 +4,12 @@ import { AppModule } from './app.module';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
-  app.enableCors();
+  app.enableCors({
+    origin: true,
+    credentials: true,
+  });
+
+  await app.listen(4000);
 
   const options = new DocumentBuilder()
     .addBearerAuth()
@@ -15,7 +20,5 @@ async function bootstrap() {
   const document = SwaggerModule.createDocument(app, options);
   // Swagger path: http://localhost:3200/api/docs
   SwaggerModule.setup(`/api`, app, document);
-
-  await app.listen(3001);
 }
 bootstrap();

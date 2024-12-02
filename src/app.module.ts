@@ -6,10 +6,13 @@ import { SearchModule } from './search/search.module';
 import utils from './utils';
 
 @Module({
-  imports: [SearchModule, ConfigModule.forRoot({
-    isGlobal: true,
-    load: [utils],
-  })],
+  imports: [
+    SearchModule,
+    ConfigModule.forRoot({
+      isGlobal: true,
+      load: [utils],
+    }),
+  ],
   controllers: [AppController],
   providers: [AppService],
 })
