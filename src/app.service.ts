@@ -23,100 +23,74 @@ export class AppService {
     voteAverage: number,
     genres: Array<any>,
   ) {
+    console.log(genres);
+    console.log(genres);
+    console.log(genres);
+    console.log(genres);
+    console.log(genres);
+    console.log(genres);
+    console.log(genres);
+    console.log(genres);
+    console.log(genres);
+    console.log(genres);
+    console.log(genres);
     try {
-      const movie = await this.prisma.movie.findUnique({
+      const movie = await this.prisma.movie.upsert({
         where: {
           externalId: Number(externalId),
         },
-      });
-
-      console.log(movie);
-
-      if (!movie) {
-        console.log(genres);
-        await this.prisma.movie.create({
-          data: {
-            [language === 'en_US' ? 'titleEn' : 'titleFr']: title,
-            externalId: Number(externalId),
-            titleEn: language === 'en_US' ? title : null,
-            titleFr: language === 'fr-FR' ? title : null,
-            isAdult: isAdult,
-            director: director,
-            originalLanguage: originalLanguage,
-            overviewEn: language === 'en_US' ? overview : null,
-            overviewFr: language === 'fr-FR' ? overview : null,
-            popularity: popularity,
-            releaseDate: releaseDate ? new Date(releaseDate) : null,
-            posterPath: posterPath,
-            voteAverage: voteAverage,
-            MovieGenre: {
-              create: genres.map((genre) => ({
-                genre: {
-                  connect: {
-                    externalId: genre,
-                  },
+        update: {
+          [language === 'en_US' ? 'titleEn' : 'titleFr']: title,
+          externalId: Number(externalId),
+          titleEn: originalLanguage === 'en' ? title : null,
+          titleFr: originalLanguage === 'fr' ? title : null,
+          isAdult: isAdult,
+          director: director,
+          originalLanguage: originalLanguage,
+          overviewEn: originalLanguage === 'en' ? overview : null,
+          overviewFr: originalLanguage === 'fr' ? overview : null,
+          popularity: popularity,
+          releaseDate: releaseDate ? new Date(releaseDate) : null,
+          posterPath: posterPath,
+          voteAverage: voteAverage,
+          MovieGenre: {
+            create: genres.map((genre) => ({
+              genre: {
+                connectOrCreate: {
+                  where: { externalId: genre }, // Vérifie si le genre existe
+                  create: { externalId: genre }, // Crée le genre si inexistant
                 },
-              })),
-            },
+              },
+            })),
           },
-        });
-      } else {
-        await this.prisma.$transaction(async (prisma) => {
-          let movie = await prisma.movie.findUnique({
-            where: { externalId: Number(externalId) },
-          });
-
-          if (!movie) {
-            movie = await prisma.movie.create({
-              data: {
-                externalId: Number(externalId),
-              },
-            });
-          }
-
-          const validGenres = await prisma.genre.findMany({
-            where: {
-              externalId: { in: genres },
-            },
-          });
-
-          if (validGenres.length !== genres.length) {
-            throw new Error('Some genres do not exist in the database');
-          }
-
-          for (const genre of validGenres) {
-            await prisma.movieGenre.upsert({
-              where: {
-                movieId_genreId: {
-                  movieId: movie.externalId,
-                  genreId: genre.id,
+        },
+        create: {
+          [language === 'en_US' ? 'titleEn' : 'titleFr']: title,
+          externalId: Number(externalId),
+          titleEn: originalLanguage === 'en' ? title : null,
+          titleFr: originalLanguage === 'fr' ? title : null,
+          isAdult: isAdult,
+          director: director,
+          originalLanguage: originalLanguage,
+          overviewEn: originalLanguage === 'en' ? overview : null,
+          overviewFr: originalLanguage === 'fr' ? overview : null,
+          popularity: popularity,
+          releaseDate: releaseDate ? new Date(releaseDate) : null,
+          posterPath: posterPath,
+          voteAverage: voteAverage,
+          MovieGenre: {
+            create: genres.map((genre) => ({
+              genre: {
+                connectOrCreate: {
+                  where: { externalId: genre }, // Vérifie si le genre existe
+                  create: { externalId: genre }, // Crée le genre si inexistant
                 },
               },
-              update: {},
-              create: {
-                movieId: movie.externalId,
-                genreId: genre.id,
-              },
-            });
-          }
-
-          await prisma.movie.update({
-            where: { externalId: Number(externalId) },
-            data: {
-              releaseDate: releaseDate ? new Date(releaseDate) : null,
-              [language === 'en-US' ? 'titleEn' : 'titleFr']: title,
-              [language === 'en-US' ? 'overviewEn' : 'overviewFr']: overview,
-              isAdult: isAdult,
-              director: director,
-              originalLanguage: originalLanguage,
-              popularity: popularity,
-              posterPath: posterPath,
-              voteAverage: voteAverage,
-            },
-          });
-        });
-      }
-      await this.prisma.$disconnect();
+            })),
+          },
+        },
+      });
+      console.log(movie, 'got inserted');
     } catch (error) {
       console.error(error);
     }
